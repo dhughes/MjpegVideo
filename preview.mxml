@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="300" xmlns:webcam="frameComponents.webcam.*">
+	
+	<mx:Script>
+		<![CDATA[
+			public function updatePhoto():void{
+				camPreview.loadPhoto();			
+			}
+		]]>
+	</mx:Script>
+	
+	<webcam:webcamStill id="camPreview" left="50" top="30" right="50" bottom="55" host="audrey" port="80" />
+	<mx:Label text="Audrey-Cam" right="100" left="100" textAlign="center" fontSize="30" bottom="10"/>
+	
+</mx:Canvas>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="loadPhoto();">
+
+	<mx:Script>
+		<![CDATA[
+			public var host:String;
+			public var port:int;
+			
+			public function loadPhoto():void{
+				camImage.source = "http://" + host + ":" + port + "/image.jpg?" + Math.random();					
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Image id="camImage" horizontalAlign="center" verticalAlign="middle"  left="0" top="0" bottom="0" right="0"/>
+	
+</mx:Canvas>

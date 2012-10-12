@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:display="flash.display.*">
+
+	<mx:Script>
+		<![CDATA[
+			import mx.utils.Base64Encoder;
+			import mx.controls.Image;
+			
+			public var host:String;
+			public var port:int;
+			public var username:String;
+			public var password:String;
+			
+			private var webcamSocket:Socket = new Socket();
+			private var imageBuffer:ByteArray = new ByteArray();
+			
+			[ArrayElementType("mx.controls.Image")]
+			private var images:Array = new Array();
+			private var imageIndex:int = 0;
+			private var imageCount:int = 2;
+						
+			public function start():void{
+				webcamSocket.addEventListener(Event.CONNECT, handleConnect);
+				webcamSocket.addEventListener(ProgressEvent.SOCKET_DATA, handleData);
+				webcamSocket.connect(host, port);
+				
+				var x:int;
+				var img:Image;
+				for(x = 0 ; x < imageCount ; x++){
+					img = new Image();
+					img.setStyle("left", 0);
+					img.setStyle("top", 0);
+					img.setStyle("right", 0);
+					img.setStyle("bottom", 0);
+					img.setStyle("horizontalAlign", "center");
+					img.setStyle("verticalAlign", "middle");
+					this.addChild(img);
+					images[x] = img;
+				}
+			}
+			
+			public function end():void{
+				webcamSocket.close();
+			}
+			
+			private function handleConnect(event:Event):void{
+				// we're connected send a request
+				var httpRequest:String = "GET /mjpeg.cgi HTTP/1.1\r\n";
+				httpRequest += "Host: localhost:80\r\n";
+				if(username != null && password != null){
+					var auth:Base64Encoder = new Base64Encoder();
+					auth.encode(username + ":" + password);
+					httpRequest += "Authorization: basic " + auth.toString()+ "\r\n";	
+				}
+				httpRequest += "Connection: keep-alive\r\n\r\n";
+				webcamSocket.writeMultiByte(httpRequest, "us-ascii");
+			}
+			
+			private function handleData(event:ProgressEvent):void{
+				trace("Got Data!" + event.toString());
+				// get the data that we received.
+				
+				// append the data to our imageBuffer
+				webcamSocket.readBytes(imageBuffer, imageBuffer.length);
+				
+				while(findImages()){
+					// do nothing				
+				}
+			}
+			
+			private function findImages():Boolean{
+				// loop over the imageBuffer and look for specific identifiers which define the boundries of images. 
+				// we're going to start by looking for FF D8 which denotes the start of an jpeg image and the first two bytes of said image.
+				// we'll note that point and then look for 2D 2D 76 69 64 65 6F 20 62 6F 75 6E 64 61 72 79 2D 2D  which, in ascii says "--video boundary--" and denotes the end of an image.
+				// once we know the beginning and ending point we'll cut that out, pass that to our image, and truncate our imageBuffer.
+				var startMarker:ByteArray = new ByteArray();
+				var x:int = 0;
+				var start:int = 0;
+				var end:int = 0;
+				var image:ByteArray;
+				
+				if(imageBuffer.length > 1){
+					// look for the start of an image!
+					for(x ; x < imageBuffer.length-1 ; x=x+1){
+						// get the first two bytes.
+						imageBuffer.position = x;
+						imageBuffer.readBytes(startMarker, 0, 2);
+						
+						// are the the start of a jpeg?
+						if(startMarker[0] == 255 && startMarker[1] == 216){
+							start = x;
+							//trace("found start of image at: " + x);
+							break;
+						}
+					}
+					
+					// look for the end of an image!
+					for(x ; x < imageBuffer.length-17 ; x++){
+						// get the first 18 bytes.
+						imageBuffer.position = x;
+						imageBuffer.readBytes(startMarker, 0, 18);
+						
+						// are these the end of a jpeg?
+						if(startMarker.toString() == "--video boundary--"){
+							end = x;
+							//trace("found end of image at: " + x);
+							break;
+						}
+					}
+					
+					// if we have the start and end of an image, grab the image and show it 
+					if(start && end){
+						// grab the image
+						image = new ByteArray();
+						imageBuffer.position = start;
+						imageBuffer.readBytes(image, 0, end-start);
+						
+						displayImage(image);
+												
+						// truncate the imageBuffer
+						var newImageBuffer:ByteArray = new ByteArray();
+						//trace("imageBuffer length " + imageBuffer.length);
+						imageBuffer.position = end;
+						imageBuffer.readBytes(newImageBuffer, 0);
+						imageBuffer = newImageBuffer;
+						//trace("NEW! imageBuffer length " + newImageBuffer.length);
+						return true;
+					}
+					
+				}
+				
+				return false;
+			}
+			
+			private function displayImage(image:ByteArray):void{
+				var x:int;
+				
+				// set the current image's source
+				images[imageIndex % imageCount].source = image;
+				
+				images[imageIndex % imageCount].setStyle("z-index", images.length);
+				
+				for(x = 0 ; x < images.length ; x++){
+					if(x != imageIndex % imageCount){
+						images[x].setStyle("z-index", 0);
+					}
+				}
+				
+				imageIndex++;
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:Image />
+	
+</mx:Canvas>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="300" xmlns:webcam="frameComponents.webcam.*">
+	<mx:Metadata>
+        [Event(name="backClick", type="flash.events.Event")]
+    </mx:Metadata>
+    
+    <mx:Script>
+    	<![CDATA[
+    		
+    		public function stop():void{
+    			video.end();
+    			trace("stopped video");	
+    		}
+    		
+    		public function start():void{
+    			video.start();
+    			trace("started video");
+    		}
+    	]]>
+    </mx:Script>
+    
+    <webcam:webcamVideo id="video" left="0" top="0" right="0" bottom="0" host="audrey" port="80" />
+	<mx:Button label="Back" fillAlphas="[0.6, 0.4, 0.75, 0.65]" fillColors="[#FFFFFF, #FF0000]" right="10" top="10" click="dispatchEvent(new Event('backClick'));"/>
+	
+</mx:Canvas>
